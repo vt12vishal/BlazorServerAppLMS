@@ -1,0 +1,38 @@
+﻿@page "/"
+@inject IJSRuntime js
+
+<PageTitle>Index</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, @context.User.Identity.Name! Welcome to Leave Management System</h1>
+    </Authorized>
+    <NotAuthorized>
+        <h1 style="font-family: Arial, sans-serif; color: #FFF; font-size: 48px; font-weight: bold; text-align: center; margin-top: 20px; background: linear-gradient(135deg, #002c77, #8c0073); padding: 10px;">Welcome to Leave Management System!</h1>
+
+    </NotAuthorized>
+</AuthorizeView>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+<AuthorizeView>
+    <Authorized>
+        <br /><br />
+        <button class="btn btn-outline-primary" @onclick="DisplayGreetingAlert">Display Greeting Alert</button>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+    
+
+    private async Task DisplayGreetingAlert()
+    {
+        var authState = await authenticationState;
+        var message = $"Hello {authState.User.Identity.Name}";
+        await js.InvokeVoidAsync("alert", message);
+    }
+}

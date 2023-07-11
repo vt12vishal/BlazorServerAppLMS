@@ -1,0 +1,460 @@
+﻿@page "/Employees"
+@attribute [Authorize(Roles = "User,Administrator")]
+@using BlazorServerApp.Data
+@using Microsoft.Data.SqlClient;
+@using BlazorServerApp.Authentication
+@using BlazorServerApp.Services
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject NavigationManager navManager
+
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject EmailService emailService
+
+
+
+@inject NavigationManager NavigationManager
+
+@inject EmployeeService employeesService
+
+
+
+<h1 style="font-family: Arial, sans-serif; color: #333; background: linear-gradient(to right, #ff5f6d, #ffc371); padding: 10px; border-radius: 4px;">LEAVES REQUESTS</h1>
+
+
+
+<h3 style="font-family: Arial, sans-serif; color: #333; background: linear-gradient(to right, #ff5f6d, #ffc371); padding: 10px; border-radius: 4px;">PENDING REQUESTS</h3>
+
+
+@if (EmpObj1 is null)
+{
+    <p><em>Loading...........................!</em></p>
+}
+else
+{
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>User Name</th>
+                <th>Leave Id</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Leave Type</th>
+                <th>Start Date</th>
+                <th>Full Day/Half Day</th>
+                <th>End Date</th>
+                <th>Full Day/Half Day</th>
+                <th>No of Days</th>
+                <th>Status</th>
+                <th>Edit</th>
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        <th>Delete</th>
+                        <th>Approve</th>
+                        <th>Reject</th>
+                    </Authorized>
+                </AuthorizeView>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in EmpObj1)
+            {
+                <tr>
+                    <td>@emp.UserName</td>
+                    <td>@emp.Id</td>
+                    <td>@emp.FirstName</td>
+                    <td>@emp.LastName</td>
+                    <td>@emp.LeaveType</td>
+                    <td>@emp.StartDate</td>
+                    <td>@(emp.SDtype ? "Full Day" : "Half Day")</td>
+                    <td>@emp.EndDate</td>
+                    <td>@(emp.EDtype ? "Full Day" : "Half Day")</td>
+                    <td>@emp.NoofDays</td>
+                    <td>@emp.Status</td>
+                    <td>
+                        <a class="btn btn-link" href="EditLeave/@emp.Id">
+                            <span class="oi oi-pencil" aria-hidden="true">Edit</span>
+                        </a>
+                    </td>
+                    <AuthorizeView Roles="Administrator">
+                        <Authorized>
+                            <td>
+                                <a>
+                                    <button type="button" @onclick="(async () => await DeleteLeave(emp.Id))" class="btn btn-danger btn-sm">Delete</button>
+                                </a>
+                            </td>
+                            <td>
+                                <a>
+                                    <button type="button" @onclick="(async () => await ApproveLeave(emp.Id, emp.UserName, emp.NoofDays))" class="btn btn-success btn-sm">Approve</button>
+                                </a>
+                            </td>
+                            <td>
+                                <a>
+                                    <button type="button" @onclick="(async() => await RedirectToRejectPage(emp.Id))" class="btn btn-danger btn-sm">Reject</button>
+
+                                </a>
+                            </td>
+                        </Authorized>
+                    </AuthorizeView>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+<h3 style="font-family: Arial, sans-serif; color: #333; background: linear-gradient(to right, #ff5f6d, #ffc371); padding: 10px; border-radius: 4px;">APPROVED/REJECTED REQUESTS HISTORY</h3>
+
+
+
+@if (EmpObj2 is null)
+{
+    <p><em>Loading...........................!</em></p>
+}
+else
+{
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>User Name</th>
+                <th>Leave Id</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Leave Type</th>
+                <th>Start Date</th>
+                <th>Full Day/Half Day</th>
+                <th>End Date</th>
+                <th>Full Day/Half Day</th>
+                <th>No of Days</th>
+                <th>Status</th>
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        <th>Delete</th>
+                        
+                    </Authorized>
+                </AuthorizeView>
+                
+              
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in EmpObj2)
+            {
+                <tr>
+                    <td>@emp.UserName</td>
+                    <td>@emp.Id</td>
+                    <td>@emp.FirstName</td>
+                    <td>@emp.LastName</td>
+                    <td>@emp.LeaveType</td>
+                    <td>@emp.StartDate</td>
+                    <td>@(emp.SDtype ? "Full Day" : "Half Day")</td>
+                    <td>@emp.EndDate</td>
+                    <td>@(emp.EDtype ? "Full Day" : "Half Day")</td>
+                    <td>@emp.NoofDays</td>
+                    <td>@emp.Status</td>
+                    <AuthorizeView Roles="Administrator">
+                        <Authorized>
+                            <td>
+                                <a>
+                                    <button type="button" @onclick="(async () => await DeleteLeave(emp.Id))" class="btn btn-danger btn-sm">Delete</button>
+                                </a>
+                            </td>
+                           
+                        </Authorized>
+                    </AuthorizeView>
+                    
+                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+<div style="border: 1px solid black; padding: 10px; background: linear-gradient(to right, #ADD8E6, #87CEFA);">
+    <NavLink class="nav-link" href="AddNewLeave">
+        <span class="oi oi-plus" aria-hidden="true">Add New Leave</span>
+    </NavLink>
+</div>
+
+
+<AuthorizeView Roles="User">
+    <Authorized>
+        <div style="border: 1px solid black; padding: 10px; background-color: lightgray;">
+            <p>You have got <strong><span style="color: red;">@leaveleft</span></strong> days Leaves Remaining !!!</p>
+        </div>
+        <div style="border: 1px solid black; padding: 10px; background-color: lightgray;">
+            <p>Number of Pending Leaves :<strong><span style="color: red;">@pendingleave</span></strong> </p>
+        </div>
+        <div style="border: 1px solid black; padding: 10px; background-color: lightgray;">
+            <p>Number of Booked Leaves : <strong><span style="color: red;">@bookedleave</span></strong> </p>
+        </div>
+        <div style="border: 1px solid black; padding: 10px; background-color: lightgray;">
+            <p>Number of Rejected Leaves<strong><span style="color: red;">@rejectedleave</span></strong> </p>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+
+@code {
+    List<Employee> EmpObj1;
+    List<Employee> EmpObj2;
+
+
+
+    int leaveleft;
+    string email = "";
+    int pendingleave;
+    int bookedleave;
+    int rejectedleave;
+    private string connectionString;
+
+    protected override void OnInitialized()
+    {
+        connectionString = Configuration.GetConnectionString("DefaultConnection");
+    }
+
+    protected async Task<string> GetLoggedInUserName()
+    {
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        return user.Identity.Name;
+    }
+
+    protected async Task RedirectToRejectPage(int id)
+    {
+        
+        string rejectLeaveUrl = $"/RejectLeave/{email}/{id}";
+
+        
+        navManager.NavigateTo(rejectLeaveUrl);
+    }
+    protected async Task<string> GetLoggedInUserRole()
+    {
+        string loggedInUserName = await GetLoggedInUserName();
+
+
+        var role="";
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+
+
+            string query = "SELECT Role,Email FROM UserAccounts WHERE UserName = @UserName";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+
+                        role = reader.GetString(0);
+                        email = reader.GetString(1);
+                    }
+                }
+            }
+        }
+
+        return role;
+
+    }
+
+    protected async Task PopulateUserInfo()
+    {
+        string loggedInUserName = await GetLoggedInUserName();
+
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query1 = "SELECT LeaveLeft FROM UserAccounts WHERE UserName = @UserName";
+
+            using (SqlCommand command = new SqlCommand(query1, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+
+                        leaveleft = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            string query2 = "SELECT count(Id) FROM Employees WHERE UserName= @Username and Status='Approved'";
+
+            using (SqlCommand command = new SqlCommand(query2, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+
+                        bookedleave = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            string query3 = "SELECT count(Id) FROM Employees WHERE UserName= @Username and Status='Rejected'";
+
+            using (SqlCommand command = new SqlCommand(query3, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+
+                        rejectedleave = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            string query4 = "SELECT count(Id) FROM Employees WHERE UserName= @Username and Status='Pending'";
+
+            using (SqlCommand command = new SqlCommand(query4, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+
+                        pendingleave = reader.GetInt32(0);
+                    }
+                }
+            }
+
+        }
+    }
+
+
+
+    protected async Task DeleteLeave(int id)
+    {
+
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query = "DELETE FROM Employees WHERE Id = @Id";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", id);
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+        await OnInitializedAsync();
+
+        return;
+    }
+
+
+    protected async Task ApproveLeave(int id,string username,int NOD)
+    {
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query1 = "UPDATE Employees SET Status='Approved'  WHERE Id = @Id";
+            int LL = leaveleft - NOD;
+            string query2 = "UPDATE UserAccounts SET LeaveLeft = @LeaveLeft  where UserName=@UserName ";
+
+            using (SqlCommand command = new SqlCommand(query1, connection))
+            {
+                command.Parameters.AddWithValue("@Id", id);
+
+                await command.ExecuteNonQueryAsync();
+            }
+            using (SqlCommand command = new SqlCommand(query2, connection))
+            {
+                command.Parameters.AddWithValue("@LeaveLeft", LL);
+                command.Parameters.AddWithValue("@UserName", username);
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        await SendEmail(email, "Approved",id);
+        await OnInitializedAsync();
+        return;
+    }
+
+    //protected async Task RejectLeave(int id)
+    //{
+
+
+    //    using (SqlConnection connection = new SqlConnection(connectionString))
+    //    {
+    //        await connection.OpenAsync();
+
+    //        string query = "UPDATE Employees SET Status='Rejected'  WHERE Id = @Id";
+
+    //        using (SqlCommand command = new SqlCommand(query, connection))
+    //        {
+    //            command.Parameters.AddWithValue("@Id", id);
+
+    //            await command.ExecuteNonQueryAsync();
+    //        }
+    //    }
+
+    //    await SendEmail(email, "Rejected",id);
+    //    await OnInitializedAsync();
+    //    return;
+    //}
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        string userRole = await GetLoggedInUserRole();
+        // Implement a method to get the role of the logged-in user
+
+        string loggedInUserName = await GetLoggedInUserName();
+
+        if (userRole == "Administrator")
+        {
+            EmpObj1 = await employeesService.GetAllEmployeesP();
+            EmpObj2 = await employeesService.GetAllEmployeesA();
+        }
+        else if (userRole == "User")
+        {
+            var userName = GetLoggedInUserName(); // Implement a method to get the username of the logged-in user
+            EmpObj1 = await employeesService.GetEmployeeByUserNameP(loggedInUserName);
+            EmpObj2 = await employeesService.GetEmployeeByUserNameA(loggedInUserName);
+        }
+
+        
+       
+        //EmpObj = await Task.Run(() => employeesService.GetAllEmployees());
+
+        await PopulateUserInfo();
+
+
+    }
+
+    private async Task SendEmail(string recipientEmail, string status,int id)
+    {
+        await emailService.SendMailApproveAsync(recipientEmail, status,id);
+    }
+
+}

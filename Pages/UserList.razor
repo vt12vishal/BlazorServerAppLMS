@@ -1,0 +1,68 @@
+﻿@page "/UserList"
+@using BlazorServerApp.Authentication;
+@inject UserAccountService useraccountService
+
+
+
+<h3 style="font-family: Arial, sans-serif; color: #333; font-size: 24px; font-weight: bold; text-align: center; padding: 10px; background: linear-gradient(to right, #ff5f6d, #ffc371); border-radius: 4px;">User List</h3>
+
+@if (Userobj is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="user-list-box">
+        <table class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>User Name</th>
+                    <th>Role</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Leaves Left</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Userobj)
+                {
+                    <tr>
+                        <td>@emp.UserName</td>
+                        <td>@emp.Role</td>
+                        <td>@emp.FirstName</td>
+                        <td>@emp.LastName</td>
+                        <td>@emp.LeaveLeft</td>
+                        <td>@emp.Email</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+
+
+
+
+@code {
+    List<UserAccount> Userobj;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        Userobj = await useraccountService.GetAllUsers();
+
+        
+
+
+        return;
+    }
+
+    
+
+    
+
+
+}

@@ -1,0 +1,89 @@
+﻿@page "/RejectLeave/{email}/{id}"
+
+@using BlazorServerApp.Data
+@using Microsoft.Data.SqlClient;
+@using BlazorServerApp.Authentication
+@using BlazorServerApp.Services
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject EmailService emailService
+@inject NavigationManager NavigationManager
+
+
+<h3>Reject Leave</h3>
+
+<div class="form-group">
+    <label for="reason" class="font-weight-bold">Reason for Rejecting Leave</label>
+    <textarea id="reason" @bind="@rejectedReason" class="form-control" placeholder="Enter reason"></textarea>
+</div>
+
+<div class=" form-group mt-4">
+    <button class="btn btn-primary" @onclick="SubmitReason">Submit</button>
+    <input type="button" class="btn btn-danger btn-sm" @onclick="@Cancel" value="Cancel" />
+</div>
+
+@code {
+    [Parameter]
+    public string Email { get; set; }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    private string rejectedReason;
+
+    private string connectionString;
+
+    protected override void OnInitialized()
+    {
+        connectionString = Configuration.GetConnectionString("DefaultConnection");
+    }
+
+    private async void SubmitReason()
+    {
+        await RejectLeave(Id);
+        rejectedReason = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        await base.OnInitializedAsync();
+    }
+
+    protected async Task RejectLeave(string id)
+    {
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query = "UPDATE Employees SET Status='Rejected'  WHERE Id = @Id";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@Id", id);
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        await SendEmail(Email, "Rejected", id);
+        await OnInitializedAsync();
+        return;
+    }
+
+    private async Task SendEmail(string recipientEmail, string status, string id)
+    {
+        await emailService.SendMailRejectAsync(recipientEmail, status, Convert.ToInt32(id),rejectedReason);
+
+        NavigationManager.NavigateTo("Employees", true);
+    }
+
+
+    protected void Cancel()
+    {
+        NavigationManager.NavigateTo("Employees");
+    }
+
+}

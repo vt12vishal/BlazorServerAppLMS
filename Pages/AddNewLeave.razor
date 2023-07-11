@@ -1,0 +1,241 @@
+﻿@page "/AddNewLeave"
+@attribute [Authorize(Roles = "Administrator,User")]
+
+@using System
+@using Microsoft.AspNetCore.Components.Forms
+@using BlazorServerApp.Data
+@using Microsoft.Data.SqlClient;
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject EmployeeService employeeService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject IJSRuntime js
+
+
+<h3 style="font-size: 24px; color: #fff; background: linear-gradient(to right, #ff5f6d, #ffc371); padding: 10px; border-radius: 5px;">Add New Leave</h3>
+
+
+<hr />
+
+
+<div style="background: linear-gradient(to bottom, #87CEEB, #ADD8E6); padding: 20px; border-radius: 5px;">
+    <form class="my-form">
+
+        <div class="row">
+            <div class="col-md-8">
+
+                <div class="form-group">
+                    <label for="UserName" class="control-label">Username</label>
+                    <input form="UserName" class="form-control" value="@obj.UserName" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="FirstName" class="control-label">First Name</label>
+                    <input form="FirstName" class="form-control" value="@obj.FirstName" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="LastName" class="control-label">Last Name</label>
+                    <input form="LastName" class="form-control" value="@obj.LastName" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="LeaveType" class="control-label">Leave Type</label>
+                    <select @bind="@obj.LeaveType" class="form-control">
+                        <option value="">-Select Leave Type</option>
+                        <option value="Casual">Casual</option>
+                        <option value="Medical">Medical</option>
+                        <option value="Earned or Privelege">Privelege</option>
+                        <option value="Parental Leave">Parental</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="StartDate" class="control-label">Start Date</label>
+                    <InputDate form="StartDate" class="form-control" @bind-Value="@obj.StartDate" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Leave Type</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="fullDay" checked="@obj.SDtype" @onchange="e => obj.SDtype = true" />
+                        <label class="form-check-label" for="fullDay">Full Day</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="halfDay" checked="@(!obj.SDtype)" @onchange="e => obj.SDtype = false" />
+                        <label class="form-check-label" for="halfDay">Half Day</label>
+                    </div>
+                </div>
+
+
+
+
+
+                <div class="form-group">
+                    <label for="EndDate" class="control-label">End Date</label>
+                    <InputDate form="EndDate" @bind-Value="@obj.EndDate" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Leave Type</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="fullDay" checked="@obj.EDtype" @onchange="e => obj.EDtype = true" />
+                        <label class="form-check-label" for="fullDay">Full Day</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="halfDay" checked="@(!obj.EDtype)" @onchange="e => obj.EDtype = false" />
+                        <label class="form-check-label" for="halfDay">Half Day</label>
+                    </div>
+                </div>
+
+
+
+
+
+                <div class="form-group">
+                    <label for="Status" class="control-label">Status</label>
+                    <input form="Status" class="form-control" value="Pending" readonly />
+                </div>
+
+                <div class="form-group">
+                    @code {
+                        public int noofDays => (@obj.EndDate - @obj.StartDate).TotalDays >= 0 ? (int)(@obj.EndDate - @obj.StartDate).TotalDays + 1 : 0;
+                    }
+                    <label for="NoofDays" class="control-label">No of Days</label>
+                    <input form="NoofDays" class="form-control" value="@noofDays" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Leave Left</label>
+                    <p class="form-control-static">@LeaveLeft</p>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <input type="button" class="btn btn-primary" @onclick="@CreateNewLeaveDetails" value="Save Leave" />
+                    <input type="button" class="btn btn-primary" @onclick="@Cancel" value="Cancel" />
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@code {
+
+
+    Employee obj = new Employee();
+
+    int LeaveLeft;
+    private string connectionString;
+
+    protected override void OnInitialized()
+    {
+        connectionString = Configuration.GetConnectionString("DefaultConnection");
+    }
+
+    protected async Task<string> GetLoggedInUserName()
+    {
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        return user.Identity.Name;
+    }
+
+    protected async Task PopulateUserInfo()
+    {
+        string loggedInUserName = await GetLoggedInUserName();
+
+       
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+            string query = "SELECT UserName,FirstName, LastName,LeaveLeft FROM UserAccounts WHERE UserName = @UserName";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", loggedInUserName);
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        obj.UserName = reader["UserName"].ToString();
+                        obj.FirstName = reader["FirstName"].ToString();
+                        obj.LastName = reader["LastName"].ToString();
+                        LeaveLeft = reader.GetInt32(3);
+                    }
+                }
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await PopulateUserInfo();
+    }
+
+
+
+
+    protected async void CreateNewLeaveDetails()
+    {
+        
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+
+
+
+            string query = "INSERT INTO Employees (UserName,FirstName, LastName, LeaveType, StartDate,SDtype, EndDate,EDtype, Status,NoofDays) " +
+                           "VALUES (@UserName,@FirstName, @LastName, @LeaveType, @StartDate,@SDtype, @EndDate,@EDtype, @Status,@NoofDays)";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", obj.UserName);
+                command.Parameters.AddWithValue("@FirstName", obj.FirstName);
+                command.Parameters.AddWithValue("@LastName", obj.LastName);
+                command.Parameters.AddWithValue("@LeaveType", obj.LeaveType);
+                command.Parameters.AddWithValue("@StartDate", obj.StartDate);
+                command.Parameters.AddWithValue("@SDtype", obj.SDtype);
+                command.Parameters.AddWithValue("@EndDate", obj.EndDate);
+                command.Parameters.AddWithValue("@EDtype", obj.EDtype);
+                command.Parameters.AddWithValue("@Status", "Pending");
+                command.Parameters.AddWithValue("@NoofDays", noofDays);
+
+                if (noofDays>LeaveLeft || noofDays==0)
+                {
+                    if (noofDays > LeaveLeft)
+                    {
+                        await js.InvokeVoidAsync("alert", "You don't have enough leaves");
+                    }
+                    if (noofDays == 0)
+                    {
+                        await js.InvokeVoidAsync("alert", "Please enter valid Start Date and End Date");
+                    }
+
+                    return;
+                }
+
+
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        NavigationManager.NavigateTo("Employees");
+    }
+
+    protected void Cancel()
+    {
+        NavigationManager.NavigateTo("Employees");
+    }
+
+
+}
+

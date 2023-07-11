@@ -1,0 +1,174 @@
+﻿@page "/AddNewUser"
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@attribute [Authorize(Roles = "Administrator")]
+
+@using BlazorServerApp.Authentication
+@using BlazorServerApp.Data
+@using Microsoft.Data.SqlClient;
+@inject EmployeeService employeeService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime js
+
+
+
+<h3 style="font-family: Arial, sans-serif; color: #333; font-size: 24px; font-weight: bold; text-align: center; padding: 10px; background: linear-gradient(to right, #ff5f6d, #ffc371); border-radius: 4px;">Add New User</h3>
+
+<hr />
+<div style="background: linear-gradient(to bottom, #87CEEB, #ADD8E6); padding: 20px; border-radius: 5px;">
+    
+
+    <form>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="for-group">
+
+                    <label for="UserName" class="control-label">User Name</label>
+                    <input form="UserName" class="form-control" @bind="@obj.UserName" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="password" class="control-label">Password</label>
+                    <input type="password" form="Password" class="form-control" @bind="@obj.Password" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="ConfirmPassword" class="control-label">Confirm Password</label>
+                    <input type="password" form="Password" class="form-control" @bind="ConfirmPassword" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="Role" class="control-label">Role</label>
+                    <input form="Role" class="form-control" @bind="@obj.Role" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="FirstName" class="control-label">First Name</label>
+                    <input form="FirstName" class="form-control" @bind="@obj.FirstName" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="LastName" class="control-label">Last Name</label>
+                    <input form="LastName" class="form-control" @bind="@obj.LastName" />
+
+                </div>
+                <div class="for-group">
+
+                    <label for="LeaveLeft" class="control-label">Leave Left</label>
+                    <input form="LeaveLeft" class="form-control" value=20 />
+
+                </div>
+
+                <div class="for-group">
+
+                    <label for="Email" class="control-label">Email</label>
+                    <input form="Email" class="form-control" @bind="@obj.Email" />
+
+                </div>
+
+
+
+
+
+
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <input type="button" class="btn btn-primary custom-btn" @onclick="@CreateNewUser" value="Save User" style="padding: 10px 20px; margin-top: 10px;" />
+                    <input type="button" class="btn btn-primary custom-btn" @onclick="@Cancel" value="Cancel" style="padding: 10px 20px; margin-top: 10px;" />
+                </div>
+            </div>
+        </div>
+
+
+    </form>
+</div>
+
+@code {
+    UserAccount obj = new UserAccount();
+    string ConfirmPassword = "";
+
+    private string connectionString;
+
+    protected override void OnInitialized()
+    {
+        connectionString = Configuration.GetConnectionString("DefaultConnection");
+    }
+
+    protected async void CreateNewUser()
+    {
+        
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+            string checkQuery = "SELECT COUNT(*) FROM UserAccounts WHERE UserName = @UserName";
+            using (SqlCommand checkCommand = new SqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@UserName", obj.UserName);
+                int count = (int)await checkCommand.ExecuteScalarAsync();
+
+                if (count > 0)
+                {
+                   
+                    await js.InvokeVoidAsync("alert", "Username Already Taken Choose Another UserName");
+                    
+                    return;
+                }
+
+                if (obj.Password!=ConfirmPassword)
+                {
+
+                    await js.InvokeVoidAsync("alert", "Password does not match");
+
+                    return;
+                }
+            }
+
+
+
+            string query = "INSERT INTO UserAccounts (UserName, Password, Role,FirstName,LastName,LeaveLeft) " +
+                           "VALUES (@UserName, @Password, @Role ,@FirstName, @LastName ,@LeaveLeft)";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@UserName", obj.UserName);
+                command.Parameters.AddWithValue("@Password", obj.Password);
+                command.Parameters.AddWithValue("@Role", obj.Role);
+                command.Parameters.AddWithValue("@FirstName", obj.FirstName);
+                command.Parameters.AddWithValue("@LastName", obj.LastName);
+                command.Parameters.AddWithValue("@LeaveLeft", 20);
+              
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        NavigationManager.NavigateTo("/",true);
+    }
+
+    protected void Cancel()
+    {
+        NavigationManager.NavigateTo("/",true);
+    }
+
+
+}
+
+
+<style>
+    .custom-btn {
+        color: white;
+        background-color: teal;
+        /* ... */
+    }
+</style>
