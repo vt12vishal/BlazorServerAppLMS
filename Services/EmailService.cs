@@ -4,18 +4,26 @@ using System;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace BlazorServerApp.Services
 {
     public class EmailService
     {
+
+        private readonly string connectionString;
+
+        public EmailService(IConfiguration configuration)
+        {
+            connectionString = configuration.GetConnectionString("DefaultConnection");
+        }
         public async Task SendMailApproveAsync(string toEmail, string status,int id)
         {
             string fromMail = "vt12vishal@gmail.com";
             string fromPassword = "mszmijfrxcsaztkl";
 
-            string connectionString = "Server=MSI\\SQLEXPRESS02;Database=Blazor;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True";
+            
             
 
             DateTime startDate=DateTime.Now;
@@ -80,6 +88,10 @@ namespace BlazorServerApp.Services
                     <h1>Your Application Status</h1>
                     <table>
                         <tr>
+                            <th>Leave Id:</th>
+                            <td>{id}</td>
+                        </tr>
+                        <tr>
                             <th>Status:</th>
                             <td>{status}</td>
                         </tr>
@@ -139,7 +151,7 @@ namespace BlazorServerApp.Services
             string fromMail = "vt12vishal@gmail.com";
             string fromPassword = "mszmijfrxcsaztkl";
 
-            string connectionString = "Server=MSI\\SQLEXPRESS02;Database=Blazor;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True";
+            
 
 
             DateTime startDate = DateTime.Now;
@@ -203,6 +215,10 @@ namespace BlazorServerApp.Services
                 <div class='container'>
                     <h1>Your Application Status</h1>
                     <table>
+                         <tr>
+                            <th>Leave Id:</th>
+                            <td>{id}</td>
+                        </tr>
                         <tr>
                             <th>Status:</th>
                             <td>{status}</td>
