@@ -1,4 +1,5 @@
-﻿using BlazorServerApp.Data;
+﻿using BlazorServerApp.Authentication;
+using BlazorServerApp.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlazorServerApp.Context
@@ -13,5 +14,6 @@ namespace BlazorServerApp.Context
 
 
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<UserAccount> UserAccounts { get; set; }
     }
 }
