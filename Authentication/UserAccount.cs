@@ -1,9 +1,11 @@
-﻿namespace BlazorServerApp.Authentication
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BlazorServerApp.Authentication
 {
     public class UserAccount
     {
 
-        
+        [Key]
         public string UserName { get; set; }
 
         public string Password { get; set; }
