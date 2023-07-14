@@ -136,8 +136,8 @@
 
 
 
-            string query = "INSERT INTO UserAccounts (UserName, Password, Role,FirstName,LastName,LeaveLeft) " +
-                           "VALUES (@UserName, @Password, @Role ,@FirstName, @LastName ,@LeaveLeft)";
+            string query = "INSERT INTO UserAccounts (UserName, Password, Role,FirstName,LastName,LeaveLeft,Email) " +
+                           "VALUES (@UserName, @Password, @Role ,@FirstName, @LastName ,@LeaveLeft,@Email)";
 
             using (SqlCommand command = new SqlCommand(query, connection))
             {
@@ -147,7 +147,8 @@
                 command.Parameters.AddWithValue("@FirstName", obj.FirstName);
                 command.Parameters.AddWithValue("@LastName", obj.LastName);
                 command.Parameters.AddWithValue("@LeaveLeft", 20);
-              
+                command.Parameters.AddWithValue("@Email", obj.Email
+                );
 
                 await command.ExecuteNonQueryAsync();
             }
